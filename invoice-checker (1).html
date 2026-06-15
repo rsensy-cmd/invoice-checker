@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בדיקת חשבוניות סוכן | Ocean Link</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #F0F2F5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+    color: #1a1a2e;
+  }
+  .header { text-align: center; margin-bottom: 2rem; }
+  .logo-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #1F3864; color: white;
+    padding: 10px 20px; border-radius: 12px;
+    font-size: 15px; font-weight: 600; margin-bottom: 1rem;
+  }
+  h1 { font-size: 26px; font-weight: 700; color: #1F3864; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #666; }
+  .container { width: 100%; max-width: 680px; }
+
+  /* Global sell price card */
+  .global-card {
+    background: #FFFBF0;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border: 1.5px solid #F0D080;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .global-card label { font-size: 13px; font-weight: 600; color: #92700A; white-space: nowrap; }
+  .global-card input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid #E8C84A;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1a1a2e;
+    outline: none;
+    background: white;
+    direction: ltr; text-align: left;
+  }
+  .global-card input:focus { border-color: #92700A; }
+  .global-hint { font-size: 12px; color: #A0802A; }
+
+  /* Invoice cards */
+  .invoices-wrap { display: flex; flex-direction: column; gap: 1rem; }
+  .invoice-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .invoice-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .invoice-num {
+    font-size: 13px; font-weight: 700; color: #1F3864;
+    background: #EEF2FF; padding: 4px 12px; border-radius: 20px;
+  }
+  .remove-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; color: #CBD5E1; line-height: 1;
+    padding: 2px 6px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .remove-btn:hover { color: #EF4444; background: #FEE2E2; }
+
+  .upload-zone {
+    border: 2px dashed #CBD5E1; border-radius: 12px;
+    padding: 1.5rem 1rem; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: #F8FAFC; user-select: none;
+    margin-bottom: 12px;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: #1F3864; background: #EEF2FF; }
+  .upload-zone.has-file { border-color: #10B981; background: #ECFDF5; }
+  .upload-zone-icon { font-size: 28px; margin-bottom: 6px; display: block; }
+  .upload-zone-text { font-size: 13px; color: #64748B; }
+  .upload-zone-filename { font-size: 12px; font-weight: 600; color: #059669; margin-top: 4px; }
+
+  .price-label { font-size: 12px; color: #64748B; margin-bottom: 5px; font-weight: 500; }
+  input[type=number] {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid #E2E8F0; border-radius: 10px;
+    font-size: 14px; font-family: inherit; color: #1a1a2e;
+    outline: none; transition: border 0.15s;
+    direction: ltr; text-align: left;
+  }
+  input[type=number]:focus { border-color: #1F3864; }
+
+  /* Result inside each card */
+  .result-inner { margin-top: 12px; display: none; }
+  .result-box {
+    border-radius: 10px; padding: 1rem;
+    font-size: 13px; line-height: 1.8;
+    white-space: pre-wrap; direction: rtl; text-align: right;
+  }
+  .result-box.loading { background: #F1F5F9; color: #64748B; display: flex; align-items: center; gap: 8px; }
+  .result-box.approved { background: #ECFDF5; color: #064E3B; border: 1.5px solid #6EE7B7; }
+  .result-box.rejected { background: #FEF2F2; color: #7F1D1D; border: 1.5px solid #FCA5A5; }
+  .result-box.api-error { background: #FFFBEB; color: #78350F; border: 1.5px solid #FCD34D; }
+  .pnl-box {
+    border-radius: 10px; padding: 1rem; margin-top: 8px;
+    font-size: 13px; line-height: 1.8;
+    white-space: pre-wrap; direction: rtl; text-align: right;
+  }
+  .pnl-box.profit { background: #ECFDF5; color: #064E3B; border: 1.5px solid #6EE7B7; }
+  .pnl-box.loss { background: #FEF2F2; color: #7F1D1D; border: 1.5px solid #FCA5A5; }
+  .pnl-box.break { background: #F1F5F9; color: #334155; border: 1.5px solid #CBD5E1; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #CBD5E1; border-top-color: #1F3864;
+    border-radius: 50%; animation: spin 0.75s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Check button per card */
+  .check-btn {
+    width: 100%; margin-top: 10px;
+    background: #1F3864; color: white; border: none;
+    border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; font-family: inherit;
+  }
+  .check-btn:hover:not(:disabled) { background: #162A4E; }
+  .check-btn:disabled { background: #CBD5E1; cursor: not-allowed; }
+
+  /* Add container button */
+  .add-btn {
+    width: 100%; margin-top: 0.5rem;
+    background: white; color: #1F3864;
+    border: 2px dashed #A5B4C8; border-radius: 14px;
+    padding: 14px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .add-btn:hover { background: #EEF2FF; border-color: #1F3864; }
+
+  /* Summary */
+  .summary-card {
+    background: #1F3864; color: white;
+    border-radius: 16px; padding: 1.25rem 1.5rem;
+    margin-top: 1rem; display: none;
+  }
+  .summary-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; opacity: 0.8; }
+  .summary-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .summary-row:last-child { border: none; }
+  .summary-total { font-size: 18px; font-weight: 700; margin-top: 10px; display: flex; justify-content: space-between; }
+  .profit-color { color: #6EE7B7; }
+  .loss-color { color: #FCA5A5; }
+
+  .footer { text-align: center; margin-top: 2rem; font-size: 12px; color: #94A3B8; }
+  .footer span { color: #C9A227; font-weight: 600; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-badge">🚢 Ocean Link — בדיקת חשבוניות</div>
+  <h1>בדיקת חשבוניות סוכן</h1>
+  <p class="subtitle">הוסף מכולות, גרור PDF לכל אחת — המערכת תבדוק ותחשב רווחיות כוללת</p>
+</div>
+
+<div class="container">
+
+  <!-- Global sell price -->
+  <div class="global-card">
+    <label>🟡 מחיר מכירה שלנו ($/CBM)</label>
+    <input type="number" id="global-sell" placeholder="לדוגמה: 65" min="0" step="0.01" oninput="updateAllBtns()">
+    <span class="global-hint">חל על כל המכולות</span>
+  </div>
+
+  <!-- Invoice cards container -->
+  <div class="invoices-wrap" id="invoices-wrap"></div>
+
+  <!-- Add container button -->
+  <button class="add-btn" onclick="addInvoice()">+ הוסף מכולה</button>
+
+  <!-- Summary across all -->
+  <div class="summary-card" id="summary-card">
+    <div class="summary-title">📊 סיכום כולל — כל המכולות</div>
+    <div id="summary-rows"></div>
+    <div class="summary-total" id="summary-total"></div>
+  </div>
+
+</div>
+
+<div class="footer">מופעל על ידי <span>Claude AI</span> · פותח עבור Ocean Link Ltd</div>
+
+<script>
+let invoices = [];
+let idCounter = 0;
+let results = {};
+
+function addInvoice() {
+  const id = ++idCounter;
+  invoices.push(id);
+  renderInvoices();
+  setTimeout(() => {
+    const el = document.getElementById('card-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+}
+
+function removeInvoice(id) {
+  invoices = invoices.filter(i => i !== id);
+  delete results[id];
+  renderInvoices();
+  updateSummary();
+}
+
+function renderInvoices() {
+  const wrap = document.getElementById('invoices-wrap');
+  // preserve existing cards, only add/remove
+  const existing = new Set([...wrap.querySelectorAll('.invoice-card')].map(el => parseInt(el.dataset.id)));
+  const needed = new Set(invoices);
+
+  // remove cards no longer needed
+  existing.forEach(id => {
+    if (!needed.has(id)) {
+      const el = document.getElementById('card-' + id);
+      if (el) el.remove();
+    }
+  });
+
+  // add new cards
+  invoices.forEach((id, idx) => {
+    if (!existing.has(id)) {
+      const card = createCard(id, idx + 1);
+      wrap.appendChild(card);
+    } else {
+      // update number label
+      const el = document.getElementById('card-' + id);
+      if (el) el.querySelector('.invoice-num').textContent = 'מכולה ' + (idx + 1);
+    }
+  });
+}
+
+function createCard(id, num) {
+  const div = document.createElement('div');
+  div.className = 'invoice-card';
+  div.dataset.id = id;
+  div.id = 'card-' + id;
+  div.innerHTML = `
+    <div class="invoice-card-header">
+      <span class="invoice-num">מכולה ${num}</span>
+      <button class="remove-btn" onclick="removeInvoice(${id})" title="הסר">✕</button>
+    </div>
+    <div class="upload-zone" id="dz-${id}" onclick="document.getElementById('fi-${id}').click()">
+      <span class="upload-zone-icon" id="icon-${id}">📁</span>
+      <div class="upload-zone-text" id="utext-${id}">גרור PDF לכאן — או לחץ לבחירה</div>
+      <div class="upload-zone-filename" id="fname-${id}"></div>
+    </div>
+    <input type="file" id="fi-${id}" accept="application/pdf">
+    <div class="price-label">🔵 מחיר קנייה — Ocean Freight ($)</div>
+    <input type="number" id="buy-${id}" placeholder="לדוגמה: 3850" min="0" step="0.01" oninput="updateBtn(${id})">
+    <button class="check-btn" id="btn-${id}" disabled onclick="runCheck(${id})">🔍 בדוק חשבונית</button>
+    <div class="result-inner" id="result-${id}">
+      <div id="result-content-${id}"></div>
+      <div id="pnl-content-${id}"></div>
+    </div>
+  `;
+
+  // file input
+  setTimeout(() => {
+    document.getElementById('fi-' + id).addEventListener('change', function(e) {
+      loadFile(id, e.target.files[0]);
+    });
+    const dz = document.getElementById('dz-' + id);
+    dz.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', e => { e.preventDefault(); dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag-over'); loadFile(id, e.dataTransfer.files[0]); });
+  }, 0);
+
+  return div;
+}
+
+function loadFile(id, file) {
+  if (!file) return;
+  if (file.type !== 'application/pdf') { alert('יש לבחור קובץ PDF בלבד'); return; }
+  document.getElementById('icon-' + id).textContent = '✅';
+  document.getElementById('utext-' + id).textContent = 'קובץ נטען בהצלחה';
+  document.getElementById('fname-' + id).textContent = file.name;
+  document.getElementById('dz-' + id).classList.add('has-file');
+  toBase64(file).then(b64 => {
+    if (!window._pdfs) window._pdfs = {};
+    window._pdfs[id] = b64;
+    updateBtn(id);
+  });
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function updateBtn(id) {
+  const buy = document.getElementById('buy-' + id)?.value;
+  const hasPdf = window._pdfs && window._pdfs[id];
+  const btn = document.getElementById('btn-' + id);
+  if (btn) btn.disabled = !(hasPdf && buy && parseFloat(buy) > 0);
+}
+
+function updateAllBtns() {
+  invoices.forEach(id => updateBtn(id));
+}
+
+async function runCheck(id) {
+  const buyPrice = parseFloat(document.getElementById('buy-' + id).value);
+  const sellPrice = parseFloat(document.getElementById('global-sell').value) || null;
+  const pdfBase64 = window._pdfs && window._pdfs[id];
+  const btn = document.getElementById('btn-' + id);
+  const resultInner = document.getElementById('result-' + id);
+  const resultContent = document.getElementById('result-content-' + id);
+  const pnlContent = document.getElementById('pnl-content-' + id);
+
+  btn.disabled = true;
+  resultInner.style.display = 'block';
+  pnlContent.innerHTML = '';
+  resultContent.innerHTML = '<div class="result-box loading"><div class="spinner"></div><span>בודק, אנא המתן...</span></div>';
+
+  const sellLine = sellPrice
+    ? `מחיר המכירה שלנו הוא: $${sellPrice} לכל CBM`
+    : 'לא הוזן מחיר מכירה — אל תחשב רווחיות.';
+
+  const pnlInstruction = sellPrice ? `
+אחרי בדיקת החיובים הוסף:
+
+──────────────────────
+📊 חישוב רווחיות:
+
+הכנסה צפויה: $${sellPrice} × [CBM כולל] = $[תוצאה]
+עלות קנייה:  $${buyPrice}
+──────────────────────
+[רווח:] ✅ רווח צפוי: $[סכום] ([אחוז]%)
+[הפסד:] ❌ הפסד צפוי: $[סכום] ([אחוז]%)
+[אפס:] ➖ איזון` : '';
+
+  const prompt = `You are a freight invoice auditor. Uploaded: debit note / cargo manifest PDF.
+
+Task:
+1. Find total CBM of the container.
+2. Expected R/O rate: $${buyPrice} ÷ total CBM (round 2 decimals).
+3. Check each B/L R/O FREIGHT charge vs expected (tolerance ±$0.05).
+${sellLine}
+
+Reply ONLY in Hebrew:
+
+📦 נפח מכולה כולל: [X] CBM
+💵 שיעור קנייה צפוי: $${buyPrice} ÷ [CBM] = [result] $/RT
+
+──────────────────────
+בדיקת שורות:
+
+[each B/L:]
+B/L [num] – [consignee] – [CBM] CBM
+חויב: [$/RT] $/RT [✅ תקין / ❌ הפרש: X$]
+
+──────────────────────
+[all ok:] ✅ חשבונית מאושרת — כל החיובים תקינים
+[issues:] ❌ נמצאו חריגות — יש לבדוק את השורות המסומנות
+${pnlInstruction}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1200,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || 'שגיאה';
+
+    const pnlSplit = text.indexOf('📊 חישוב רווחיות');
+    const invoiceText = pnlSplit > -1 ? text.substring(0, pnlSplit).trim() : text.trim();
+    const pnlText = pnlSplit > -1 ? text.substring(pnlSplit).trim() : null;
+
+    const isApproved = invoiceText.includes('חשבונית מאושרת');
+    const hasError = invoiceText.includes('חריגות') || invoiceText.includes('❌');
+    const cls = isApproved ? 'approved' : (hasError ? 'rejected' : 'api-error');
+
+    resultContent.innerHTML = `<div class="result-box ${cls}">${invoiceText}</div>`;
+
+    // parse P&L for summary
+    let pnlAmount = null;
+    if (pnlText) {
+      const isProfit = pnlText.includes('רווח צפוי');
+      const isLoss = pnlText.includes('הפסד צפוי');
+      const pnlCls = isProfit ? 'profit' : (isLoss ? 'loss' : 'break');
+      pnlContent.innerHTML = `<div class="pnl-box ${pnlCls}">${pnlText}</div>`;
+
+      // extract dollar amount for summary
+      const match = pnlText.match(/\$([\d,]+(?:\.\d+)?)/);
+      if (match) {
+        const amt = parseFloat(match[1].replace(',', ''));
+        pnlAmount = isLoss ? -amt : amt;
+      }
+    }
+
+    const filename = document.getElementById('fname-' + id).textContent || 'מכולה ' + id;
+    results[id] = { filename, buy: buyPrice, sell: sellPrice, approved: isApproved, pnl: pnlAmount };
+    updateSummary();
+
+  } catch(err) {
+    resultContent.innerHTML = `<div class="result-box api-error">⚠️ שגיאה בחיבור לשרת. נסה שוב.</div>`;
+  }
+
+  btn.disabled = false;
+  updateBtn(id);
+}
+
+function updateSummary() {
+  const keys = Object.keys(results);
+  if (keys.length < 2) {
+    document.getElementById('summary-card').style.display = 'none';
+    return;
+  }
+
+  let totalBuy = 0, totalPnl = 0, rows = '';
+  keys.forEach(id => {
+    const r = results[id];
+    totalBuy += r.buy || 0;
+    if (r.pnl !== null && r.pnl !== undefined) totalPnl += r.pnl;
+    const pnlStr = r.pnl !== null && r.pnl !== undefined
+      ? (r.pnl >= 0 ? `<span class="profit-color">+$${Math.abs(r.pnl).toFixed(0)}</span>` : `<span class="loss-color">-$${Math.abs(r.pnl).toFixed(0)}</span>`)
+      : '—';
+    rows += `<div class="summary-row"><span>${r.filename}</span><span>${pnlStr}</span></div>`;
+  });
+
+  const totalColor = totalPnl >= 0 ? 'profit-color' : 'loss-color';
+  const totalSign = totalPnl >= 0 ? '+' : '-';
+
+  document.getElementById('summary-rows').innerHTML = rows;
+  document.getElementById('summary-total').innerHTML = `
+    <span>סה"כ רווח/הפסד</span>
+    <span class="${totalColor}">${totalSign}$${Math.abs(totalPnl).toFixed(0)}</span>
+  `;
+  document.getElementById('summary-card').style.display = 'block';
+}
+
+// Start with one invoice card
+addInvoice();
+</script>
+</body>
+</html>
